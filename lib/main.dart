@@ -36,7 +36,7 @@ class _HomeState extends State<Home> {
       body: Stack(
         children: <Widget>[
           Container(
-            color: Colors.blue,
+            color: Colors.white,
           ),
           ..._widgets,
         ],
@@ -63,31 +63,23 @@ class _DragState extends State<Drag> {
   double top = 0;
   double left = 0;
 
-  double _x;
-  double _y;
+  bool _draged = false;
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
+    Widget item = DragItem();
     return Align(
-      alignment:
-          _x == null && _y == null ? Alignment.center : Alignment(-1, -1),
+      alignment: _draged == false ? Alignment.center : Alignment(-1, -1),
       child: Draggable(
         child: Container(
           padding: EdgeInsets.only(top: top, left: left),
-          child: DragItem(),
+          child: item,
         ),
         feedback: Container(
-          padding: EdgeInsets.only(top: top, left: left),
-          child: Icon(
-            Icons.run_circle,
-            size: 40,
-          ),
-        ),
+            padding: EdgeInsets.only(top: top, left: left), child: DragItem()),
         childWhenDragging: Container(
           padding: EdgeInsets.only(top: top, left: left),
-          child: DragItem(),
+          child: item,
         ),
         onDragCompleted: () {},
         onDragEnd: (drag) {
@@ -95,8 +87,7 @@ class _DragState extends State<Drag> {
             top = top + drag.offset.dy < 0 ? 0 : top + drag.offset.dy;
             left = left + drag.offset.dx < 0 ? 0 : left + drag.offset.dx;
 
-            _x = top / height;
-            _y = left / width;
+            _draged = true;
           });
         },
       ),
@@ -104,15 +95,50 @@ class _DragState extends State<Drag> {
   }
 }
 
-class DragItem extends StatelessWidget {
+class DragItem extends StatefulWidget {
   const DragItem({Key key}) : super(key: key);
 
   @override
+  _DragItemState createState() => _DragItemState();
+}
+
+class _DragItemState extends State<DragItem> {
+  bool _edit = false;
+  String text = 'Text';
+
+  final _Controller = TextEditingController();
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 100,
-      width: 100,
-      child: Text('drag me'),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _edit = true;
+        });
+      },
+      child: Container(
+        height: 100,
+        width: 200,
+        child: _edit
+            ? TextFormField(
+                controller: _Controller,
+                decoration: InputDecoration(
+                  // labelText: 'Label text',
+                  // errorText: '',
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        text = _Controller.text;
+                        _edit = false;
+                      });
+                    },
+                    icon: Icon(Icons.done),
+                  ),
+                ),
+              )
+            : Text(text),
+      ),
     );
   }
 }
