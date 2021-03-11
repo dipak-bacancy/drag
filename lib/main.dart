@@ -1,3 +1,4 @@
+import 'package:drag/item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +29,9 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   List<Widget> _widgets = [];
 
-  Widget temp;
+  int _count = 0;
+
+  final _items = Map<int, Item>();
 
   @override
   Widget build(BuildContext context) {
@@ -43,8 +46,17 @@ class _HomeState extends State<Home> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _widgets.add(Drag());
+          _widgets.add(Drag(
+            id: _count++,
+            valueChanged: (item) {
+              _items.putIfAbsent(item.id, () => item);
+            },
+          ));
           setState(() {});
+
+          print('---------------------------------------------------');
+          print(_items);
+          print('---------------------------------------------------');
         },
         child: Icon(Icons.add),
       ),
@@ -53,7 +65,10 @@ class _HomeState extends State<Home> {
 }
 
 class Drag extends StatefulWidget {
-  Drag({Key key}) : super(key: key);
+  Drag({Key key, this.id, this.valueChanged}) : super(key: key);
+
+  final ValueChanged<Item> valueChanged;
+  final int id;
 
   @override
   _DragState createState() => _DragState();
@@ -65,44 +80,6 @@ class _DragState extends State<Drag> {
 
   bool _draged = false;
 
-  @override
-  Widget build(BuildContext context) {
-    Widget item = DragItem();
-    return Align(
-      alignment: _draged == false ? Alignment.center : Alignment(-1, -1),
-      child: Draggable(
-        child: Container(
-          padding: EdgeInsets.only(top: top, left: left),
-          child: item,
-        ),
-        feedback: Container(
-            padding: EdgeInsets.only(top: top, left: left), child: DragItem()),
-        childWhenDragging: Container(
-          padding: EdgeInsets.only(top: top, left: left),
-          child: item,
-        ),
-        onDragCompleted: () {},
-        onDragEnd: (drag) {
-          setState(() {
-            top = top + drag.offset.dy < 0 ? 0 : top + drag.offset.dy;
-            left = left + drag.offset.dx < 0 ? 0 : left + drag.offset.dx;
-
-            _draged = true;
-          });
-        },
-      ),
-    );
-  }
-}
-
-class DragItem extends StatefulWidget {
-  const DragItem({Key key}) : super(key: key);
-
-  @override
-  _DragItemState createState() => _DragItemState();
-}
-
-class _DragItemState extends State<DragItem> {
   bool _edit = false;
   String text = 'Text';
 
@@ -110,34 +87,56 @@ class _DragItemState extends State<DragItem> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _edit = true;
-        });
-      },
-      child: Container(
-        height: 100,
-        width: 200,
-        child: _edit
-            ? TextFormField(
-                controller: _Controller,
-                decoration: InputDecoration(
-                  // labelText: 'Label text',
-                  // errorText: '',
-                  border: OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        text = _Controller.text;
-                        _edit = false;
-                      });
-                    },
-                    icon: Icon(Icons.done),
-                  ),
-                ),
-              )
-            : Text(text),
+    return Align(
+      alignment: _draged == false ? Alignment.center : Alignment(-1, -1),
+      child: Draggable(
+        child: Container(
+          padding: EdgeInsets.only(top: top, left: left),
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _edit = true;
+              });
+            },
+            child: Container(
+              height: 100,
+              width: 200,
+              child: _edit
+                  ? TextFormField(
+                      controller: _Controller,
+                      decoration: InputDecoration(
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              text = _Controller.text;
+                              _edit = false;
+
+                              widget.valueChanged(Item(
+                                  id: widget.id, x: left, y: top, text: text));
+                            });
+                          },
+                          icon: Icon(Icons.done),
+                        ),
+                      ),
+                    )
+                  : Text(text),
+            ),
+          ),
+        ),
+        feedback: Container(),
+        childWhenDragging: Container(),
+        onDragCompleted: () {},
+        onDragEnd: (drag) {
+          setState(() {
+            top = top + drag.offset.dy < 0 ? 0 : top + drag.offset.dy;
+            left = left + drag.offset.dx < 0 ? 0 : left + drag.offset.dx;
+
+            _draged = true;
+
+            widget
+                .valueChanged(Item(id: widget.id, x: left, y: top, text: text));
+          });
+        },
       ),
     );
   }
