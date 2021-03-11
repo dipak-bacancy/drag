@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drag/item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -97,6 +99,17 @@ class _DragState extends State<Drag> {
               setState(() {
                 _edit = true;
               });
+              const timeout = Duration(seconds: 6);
+
+              return Timer(timeout, () {
+                setState(() {
+                  text = _Controller.text;
+                  _edit = false;
+
+                  widget.valueChanged(
+                      Item(id: widget.id, x: left, y: top, text: text));
+                });
+              });
             },
             child: Container(
               height: 100,
@@ -104,20 +117,7 @@ class _DragState extends State<Drag> {
               child: _edit
                   ? TextFormField(
                       controller: _Controller,
-                      decoration: InputDecoration(
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              text = _Controller.text;
-                              _edit = false;
-
-                              widget.valueChanged(Item(
-                                  id: widget.id, x: left, y: top, text: text));
-                            });
-                          },
-                          icon: Icon(Icons.done),
-                        ),
-                      ),
+                      decoration: InputDecoration(),
                     )
                   : Text(text),
             ),
