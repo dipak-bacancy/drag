@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import 'package:drag/item.dart';
+import 'package:drag/picker.dart';
+import 'package:drag/video.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
+import 'package:tapioca/tapioca.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(MyApp());
@@ -16,13 +21,15 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Home(),
+      home: Picker(),
     );
   }
 }
 
 class Home extends StatefulWidget {
-  Home({Key key}) : super(key: key);
+  Home({Key key, this.video}) : super(key: key);
+
+  final video;
 
   @override
   _HomeState createState() => _HomeState();
@@ -35,6 +42,8 @@ class _HomeState extends State<Home> {
 
   final _items = Map<int, Item>();
 
+  final tapiocaBalls = <TapiocaBall>[];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,21 +55,51 @@ class _HomeState extends State<Home> {
           ..._widgets,
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _widgets.add(Drag(
-            id: _count++,
-            valueChanged: (item) {
-              _items.putIfAbsent(item.id, () => item);
+      floatingActionButton: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: () {
+              _widgets.add(Drag(
+                id: _count++,
+                valueChanged: (item) {
+                  _items.putIfAbsent(item.id, () => item);
+                },
+              ));
+              setState(() {});
             },
-          ));
-          setState(() {});
+            child: Icon(Icons.add),
+          ),
+          FloatingActionButton(
+            onPressed: () async {
+//
 
-          print('---------------------------------------------------');
-          print(_items);
-          print('---------------------------------------------------');
-        },
-        child: Icon(Icons.add),
+              _items.values.forEach((element) {
+                final item = TapiocaBall.textOverlay(
+                    element.text,
+                    element.x.toInt(),
+                    element.y.toInt(),
+                    100,
+                    Color(0xffffc0cb));
+                tapiocaBalls.add(item);
+              });
+
+              var tempDir = await getTemporaryDirectory();
+              final path = '${tempDir.path}/result.mp4';
+
+              final cup = Cup(Content(widget.video.path), tapiocaBalls);
+
+              cup.suckUp(path).then((_) {
+                print("finish processing");
+              });
+
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => VideoScreen(path)));
+            },
+            child: Icon(Icons.navigate_next),
+          ),
+        ],
       ),
     );
   }
@@ -85,6 +124,7 @@ class _DragState extends State<Drag> {
   bool _edit = false;
   String text = 'Text';
 
+  // ignore: non_constant_identifier_names
   final _Controller = TextEditingController();
 
   @override
